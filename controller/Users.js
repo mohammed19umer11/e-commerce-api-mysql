@@ -7,13 +7,24 @@ function INSERT(username,email,password) {
             if(error) throw error;
             console.log(mysql_db.threadId);
         });
-
-        mysql_db.query(`INSERT INTO users (username,email,password) VALUES ('${username}','${email}','${password}')`, (error, result) => {
+        const sql = 
+        `   INSERT INTO users (username,email,password) 
+            VALUES ('${username}','${email}','${password}');`;
+        mysql_db.execute(sql, (error, result) => {
             if (error) {
                 reject(error);
-            } else {
+            } else { 
                 console.log('INSERTED');
-                resolve(result);
+                console.log(result);
+                mysql_db.query(`SELECT * FROM users WHERE _id = ${result.insertId}`, (error, user) => {
+                    if (error) {
+                        reject(error);
+                    }
+                    else {
+                        console.log(user[0]);
+                        resolve(user[0]);
+                    }
+                })
             }
         });
         mysql_db.close;
@@ -30,8 +41,8 @@ function UPDATE(id,user) {
         UPDATE users 
         SET 
             ${user.username? `username='${user.username}'`:''}
-            ${user.email? `email=${user.email}`:''}
-            ${user.password? `password=${user.password}`:''} 
+            ${user.email? `email='${user.email}'`:''}
+            ${user.password? `password='${user.password}'`:''} 
         WHERE _id=${id};`;
         mysql_db.query(sql, (error, result) => {
             if (error) {
