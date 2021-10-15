@@ -4,10 +4,13 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const mysql_db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'Umer1234',
-  database: 'e-commerce'
+  host: process.env.HOST,
+  user: process.env.USER,
+  password: process.env.PASSWORD,
+  database: process.env.DATABASE,
 });
 
 export default mysql_db;
+
+
+//NEED TO PULL FROM GITHUB BECAUSE ENV FILE WAS DELETED

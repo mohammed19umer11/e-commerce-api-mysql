@@ -13,3 +13,7 @@ router.post('/userSignUp', async (req, res) => {
 
 
 export default router;
+
+
+
+//NEED TO PULL FROM GITHUB BECAUSE ENV FILE WAS DELETED

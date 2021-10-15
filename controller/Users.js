@@ -7,7 +7,7 @@ function INSERT(username,email,password) {
             if(error) throw error;
             console.log(mysql_db.threadId);
         });
-        
+
         mysql_db.query(`INSERT INTO users (username,email,password) VALUES ('${username}','${email}','${password}')`, (error, result) => {
             if (error) {
                 reject(error);
@@ -49,3 +49,7 @@ export default {
     INSERT,
     UPDATE,
 }
+
+
+
+//NEED TO PULL FROM GITHUB BECAUSE ENV FILE WAS DELETED

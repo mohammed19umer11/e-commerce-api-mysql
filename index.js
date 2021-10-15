@@ -51,3 +51,5 @@ async function startServer() {
 }
 
 startServer();
+
+//NEED TO PULL FROM GITHUB BECAUSE ENV FILE WAS DELETED
