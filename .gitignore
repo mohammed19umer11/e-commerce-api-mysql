@@ -1,6 +1,5 @@
 /node_modules
 /graphql
-/model
 
 .env
 .env.local
