@@ -1,14 +1,10 @@
 import express from 'express';
-// import dotenv from 'dotenv';
 import cors from 'cors';
+
+
 import user_routes from './routes/user.js';
-// import mongoose from 'mongoose';
-// import Single from './utils/dataLoader.js';
-// import { createRequire } from 'module';
-// const require = createRequire(import.meta.url);
-// const { graphqlHTTP } = require('express-graphql');
-// import userSchema from './graphql/userSchema.js';
-// dotenv.config();
+import product_routes from './routes/product.js';
+
 
 
 async function startServer() {
@@ -17,33 +13,11 @@ async function startServer() {
         app.use(express.urlencoded({extended: true}));
         app.use(cors());
 
-        // app.use('/user',(req,res,next) => {
-        //         console.log('==================\n GRAPHQL REQUEST STARTS  \n =====================');
-        //         const loader =  {
-        //                 single : new Single(),
-        //         }
-        //         req.loader = loader;
-        //         return next()
-        // } ,graphqlHTTP((req,res,graphQLParams) => {
-                
-        //         return {
-        //                 schema: userSchema,
-        //                 graphiql: true,
-        //                 context: {
-        //                         loader:req.loader,
-        //                 }
-        //         }
-        // }));
         app.get('',(req,res)=>{
                 res.send('Test');
         });
         app.use('/user',user_routes);
-        // const MONGODB_URL = process.env.MONGODB_URL;
-        // await mongoose
-        //         .connect(MONGODB_URL,{useNewUrlParser:true,useUnifiedTopology:true,})
-        //         .then(()=> {console.log(`CONNECTED TO DATABASE`)})
-        //         .catch((error) => console.log(error.message));
-        // mongoose.set('debug',true);
+        app.use('/product',product_routes);
         const PORT = process.env.PORT || 9000;
 
 
@@ -52,4 +26,3 @@ async function startServer() {
 
 startServer();
 
-//NEED TO PULL FROM GITHUB BECAUSE ENV FILE WAS DELETED

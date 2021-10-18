@@ -18,13 +18,14 @@ class User {
                 reject(new Error('Missing required fields'));
             }
 
-            this.password = this._hashPassword();
+            this.password = bcrypt.hashSync(this.password, bcrypt.genSaltSync(10));
 
             const sql = 
             `   INSERT INTO users (username,email,password) 
                 VALUES ('${this.username}','${this.email}','${this.password}');`;
             mysql_db.execute(sql, (error, result) => {
                 if (error) {
+                    console.log(error);
                     reject(error);
                 } else { 
                     console.log('INSERTED');
@@ -46,6 +47,32 @@ class User {
         });
     };
 
+    static loginWithCredentials(email_username, password) {
+        return new Promise((resolve, reject) => {
+            mysql_db.connect((error) => {
+                if(error) throw error;
+                console.log(mysql_db.threadId);
+            });
+            const sql = `SELECT * FROM users WHERE email='${email_username}';`;
+            mysql_db.execute(sql, (error, result) => {
+                if (error) {
+                    console.log(error);
+                    reject(error);
+                } else {
+                    console.log('Email_Username Matched');
+                    if(bcrypt.compareSync(password, result[0].password)) {
+                        console.log('Password Matched');
+                        resolve(result[0]);
+                    }
+                    else {
+                        console.log('Password Does Not Matched');
+                        reject(new Error('Password does not match'));
+                    }
+                }
+                mysql_db.close;
+            });
+        })
+    };
     static findById(id) {
         return new Promise((resolve, reject) => {
             mysql_db.connect((error) => {
@@ -58,8 +85,8 @@ class User {
                 if (error) {
                     reject(error);
                 } else {
-                    console.log('UPDATED');
-                    resolve(result); //Returns the user
+                    console.log('FOUND');
+                    resolve(result[0]); //Returns the user
                 }
                 mysql_db.close;
             });
@@ -82,6 +109,7 @@ class User {
             WHERE _id=${id};`;
             mysql_db.execute(sql, (error, result) => {
                 if (error) {
+                    console.log(error);
                     reject(error);
                 } else {
                     console.log('UPDATED');
@@ -92,13 +120,6 @@ class User {
         });
     };
 
-    _hashPassword() {
-        return bcrypt.hashSync(this.password, bcrypt.genSaltSync(10));
-    }
-    
-    _comparePassword(password, hash) {
-        return bcrypt.compareSync(password, hash);
-    }
 }
 
 export default User;
