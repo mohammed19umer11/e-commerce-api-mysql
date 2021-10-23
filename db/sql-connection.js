@@ -11,6 +11,3 @@ const mysql_db = mysql.createConnection({
 });
 
 export default mysql_db;
-
-
-//NEED TO PULL FROM GITHUB BECAUSE ENV FILE WAS DELETED

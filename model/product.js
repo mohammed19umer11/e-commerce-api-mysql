@@ -1,13 +1,13 @@
-import mysql_db from '../middleware/sql-connection.js';
+import mysql_db from '../db/sql-connection.js';
 
 class Product {
-    constructor(product) {
-        this.title = product.title;
-        this.description =  product.description;
-        this.image = product.image || null ;
-        this.price = product.price; 
-        this.category = product.category;
-        this.tags = product.tags || null;
+    constructor({title, description, image = null, price, category, tags = null}) {
+        this.title = title;
+        this.description =  description;
+        this.image = image;
+        this.price = price; 
+        this.category = category;
+        this.tags = tags;
     }
 
     save() {
