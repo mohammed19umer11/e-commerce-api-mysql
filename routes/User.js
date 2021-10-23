@@ -8,7 +8,7 @@ router.post('/signup', signUp);
 router.post('/login', logIn);
 
 
-// router.use(isAuthenticated);
+// router.use(isAuthenticated); For now disable for all routes params were unable to access
 router.get('/:id/profile', isAuthenticated, getProfile);
 
 
