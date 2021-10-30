@@ -1,4 +1,5 @@
 import mysql_db from '../db/sql-connection.js';
+import errorHandler from '../utils/errorHandler.js';
 
 class Product {
     constructor({title, description, image = null, price, category, tags = null}) {
@@ -13,31 +14,67 @@ class Product {
     save() {
         return new Promise((resolve, reject) => {
             mysql_db.connect((error) => {
-                if(error) throw error;
-                console.log(mysql_db.threadId);
+                if(error) return reject(errorHandler(error));
             });
             const sql = 
             `   INSERT INTO products (title,description,image,price,category,tags) 
                 VALUES ('${this.title}','${this.description}','${this.image}',${this.price},${this.category},'${this.tags}');`;
             mysql_db.execute(sql, (error, result) => {
                 if (error) {
-                    reject(error);
+                    return reject(errorHandler(error));
                 } else { 
-                    console.log('INSERTED');
-                    console.log(result);
-                    // returning the inserted product 
                     mysql_db.execute(`SELECT * FROM products WHERE _id = ${result.insertId}`, (error, product) => {
                         if (error) {
-                            reject(error);
+                            return reject(errorHandler(error));
                         }
                         else {
-                            console.log(product[0]);
                             resolve(product[0]); //For testing the return 
                         }
                     })
                 }
+            });
+        });
+    };
 
-                mysql_db.close;
+    static find() {
+        return new Promise((resolve, reject) => {
+            mysql_db.connect((error) => {
+                if(error) return reject(errorHandler(error));
+            });
+            const sql = `SELECT * FROM products;`;
+            mysql_db.execute(sql, (error, products) => {
+                if (error) {
+                    return reject(errorHandler(error));
+                } else {
+                    if(products.length === 0) {
+                        const error = new Error('Products Not Found');
+                        error.status = 404;
+                        return reject(error);
+                    }
+                    resolve(products); //Returns the product
+                };
+            });
+        });
+    };
+
+    static findBytitle(title) {
+        return new Promise((resolve, reject) => {
+            mysql_db.connect((error) => {
+                if(error) return reject(errorHandler(error));
+            });
+            const sql = `
+            SELECT * FROM products WHERE title=${title};`;
+            mysql_db.execute(sql, (error, product) => {
+                if (error) {
+                    return reject(errorHandler(error));
+                } else {
+                    if(product.length === 0) {
+                        const error = new Error('Product Not Found');
+                        error.status = 404;
+                        return reject(error);
+                    }
+                    resolve(product[0]); //Returns the product
+                }
             });
         });
     };
@@ -45,24 +82,26 @@ class Product {
     static findById(id) {
         return new Promise((resolve, reject) => {
             mysql_db.connect((error) => {
-                if(error) throw error;
-                console.log(mysql_db.threadId);
+                if(error) return reject(errorHandler(error));
             });
             const sql = `
             SELECT * FROM products WHERE _id=${id};`;
-            mysql_db.execute(sql, (error, result) => {
+            mysql_db.execute(sql, (error, product) => {
                 if (error) {
-                    reject(error);
+                    return reject(errorHandler(error));
                 } else {
-                    console.log('FOUND');
-                    resolve(result[0]); //Returns the product
+                    if(product.length === 0) {
+                        const error = new Error('Product Not Found');
+                        error.status = 404;
+                        return reject(error);
+                    }
+                    resolve(product[0]); //Returns the product
                 }
-                mysql_db.close;
             });
-            
         });
     };
     
+    //methods below need to updated
     static findByIdandUpdate(id,product) {
         return new Promise((resolve, reject) => {
             mysql_db.connect((error) => {

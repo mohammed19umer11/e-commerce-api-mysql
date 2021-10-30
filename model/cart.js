@@ -1,62 +1,125 @@
 import mysql_db from '../db/sql-connection.js';
-
+import User from '../model/user.js';
+import errorHandler from '../utils/errorHandler.js';
 class Cart {
-    constructor(cart) {
-        this.user_id = cart.userId;
-    }
+    // constructor(cart) {
+    //     this.user_id = cart.userId;
+    // }
 
-    save() {
+    static find(cart_id, product_id) {
         return new Promise((resolve, reject) => {
             mysql_db.connect((error) => {
-                if(error) throw error;
-                console.log(mysql_db.threadId);
+                if(error) return reject(errorHandler(error));
             });
-            const sql = 
-            `   INSERT INTO carts (user_id) 
-                VALUES (${this.user_id}');`;
+            const sql = `
+            SELECT * FROM cart_products WHERE cart_id=${cart_id} AND product_id=${product_id} LIMIT 1;`;
             mysql_db.execute(sql, (error, result) => {
                 if (error) {
-                    reject(error);
-                } else { 
-                    console.log('INSERTED');
-                    console.log(result);
-                    // returning the inserted order 
-                    mysql_db.execute(`SELECT * FROM cart WHERE _id = ${result.insertId}`, (error, cart) => {
-                        if (error) {
-                            reject(error);
-                        }
-                        else {
-                            console.log(cart[0]);
-                            resolve(cart[0]); //For testing the return 
-                        }
-                    })
+                    return reject(errorHandler(error));
+                } else {
+                    if(result.length === 0) {
+                        return resolve(false);
+                    }
+                    return resolve(true); 
                 }
-
-                mysql_db.close;
             });
+            
+        });
+    };
+
+    static addProduct(user_id, product_id) {
+        return new Promise(async (resolve, reject) => {
+            mysql_db.connect((error) => {
+                if(error) return reject(errorHandler(error));
+            });
+            const user = await User.findById(user_id);
+            if(user.cart_id === null) {
+                const sql = `INSERT INTO carts (user_id) VALUES (${user_id});`;
+                mysql_db.execute(sql, (error, cart) => {
+                    if (error) {
+                        return reject(errorHandler(error));
+                    } else {
+                        const sql = `UPDATE users SET cart_id=${cart.insertId} WHERE _id=${user_id};`;
+                        mysql_db.execute(sql, (error, user) => {
+                            if (error) {
+                                return reject(errorHandler(error));
+                            } else {
+                                const sql = `INSERT INTO cart_products (cart_id, product_id, qty) VALUES (${cart.insertId}, ${product_id}, 1);`;
+                                mysql_db.execute(sql, (error, cart_product) => {
+                                    if (error) {
+                                        return reject(errorHandler(error));
+                                    } else {
+                                        return resolve(cart_product);
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+            else {
+                if(await Cart.find(user.cart_id, product_id)){
+                    const sql = `
+                    UPDATE cart_products 
+                    SET qty = qty + 1 
+                    WHERE cart_id = ${user.cart_id} AND product_id =  ${product_id};`;
+                    mysql_db.execute(sql, (error, cart_product) => {
+                        if (error) {
+                            return reject(errorHandler(error));
+                        } else {
+                            return resolve(user.cart_id);
+                        }
+                    });
+                }
+                else {
+                    const sql = `INSERT INTO cart_products (cart_id, product_id, qty) VALUES (${user.cart_id}, ${product_id}, 1);`;
+                    mysql_db.execute(sql, (error, cart_product) => {
+                        if (error) {
+                            return reject(errorHandler(error));
+                        } else {
+                            return resolve(user.cart_id);
+                        }
+                    });
+                }
+            }
         });
     };
 
     static findById(id) {
         return new Promise((resolve, reject) => {
             mysql_db.connect((error) => {
-                if(error) throw error;
-                console.log(mysql_db.threadId);
+                if(error) return reject(errorHandler(error));
             });
             const sql = `
-            SELECT * FROM carts WHERE _id=${id};`;
-            mysql_db.execute(sql, (error, result) => {
+            SELECT
+	            cart_products.cart_id as _id,
+                products._id as product_id,
+                products.title, 
+                products.description, 
+                products.image, 
+                products.price,
+                cart_products.qty
+            FROM cart_products
+            INNER JOIN products ON cart_products.product_id = products._id
+            WHERE cart_products.cart_id =${id};`;
+            mysql_db.execute(sql, (error, cart) => {
                 if (error) {
-                    reject(error);
+                    return reject(errorHandler(error));
                 } else {
-                    console.log('FOUND');
-                    resolve(result[0]); //Returns the product
+                    if(cart.length === 0) {
+                        const error = new Error('Product Not Found');
+                        error.status = 404;
+                        return reject(error);
+                    }
+                    console.log(`CART : ${cart}`);
+                    resolve(cart); //Returns the product
                 }
-                mysql_db.close;
             });
             
         });
     };
+
+    
     
     // static findByIdandUpdate(id,product) {
     //     return new Promise((resolve, reject) => {

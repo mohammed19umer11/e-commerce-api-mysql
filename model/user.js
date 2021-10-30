@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import mysql_db from '../db/sql-connection.js';
+import errorHandler from '../utils/errorHandler.js';
 
 class User {
     constructor(username, email, password) {
@@ -11,11 +12,8 @@ class User {
     save() {
         return new Promise((resolve, reject) => {
             mysql_db.connect((error) => {
-                if(error) console.error(error);
                 if(error) {
-                    const error = new Error('Server Error');
-                    error.status = 500;
-                    return reject(error);
+                    return reject(errorHandler(error));
                 };
             });
             if (!this.username || !this.email || !this.password) {
@@ -31,39 +29,17 @@ class User {
                 VALUES ('${this.username}','${this.email}','${this.password}');`;
             mysql_db.execute(sql, (error, result) => {
                 if (error) {
-                    if(error.code==='ER_PARSE_ERROR'){
-                        console.error('SQL QUERY ERROR : ' + error);
-                        const query_error = new Error('Server Error');
-                        query_error.status = 500;
-                        return reject(query_error);
-                    }
-                    if(error.code==='ER_DUP_ENTRY'){
-                        console.error('DUPLICATE ENTRY ERROR : ' + error);
-                        const query_error = new Error('Username/Email Already Exist');
-                        query_error.status = 400;
-                        return reject(query_error);
-                    }
-                    else {
-                        console.error('SQL ERROR : ' + error);
-                        return reject(error);
-                    }
+                    return reject(errorHandler(error));
                 } else { 
-                    console.log('SQL MESSAGE : INSERTED');
                     mysql_db.execute(`SELECT * FROM users WHERE _id = ${result.insertId}`, (error, user) => {
                         if (error) {
-                            //can check if user not found | not found error code
-                            console.log('SQL ERROR : GETTING USER AFTER INSERTING');
-                            console.error(error);
-                            return reject(error);
+                            return reject(errorHandler(error));
                         }
                         else {
-                            console.log('SQL MESSAGE : USER RETURNED');
                             resolve(user[0]); //For testing the return 
                         }
                     })
                 }
-
-                mysql_db.close;
             });
         });
     };
@@ -71,11 +47,8 @@ class User {
     static loginWithCredentials(email_username, password) {
         return new Promise((resolve, reject) => {
             mysql_db.connect((error) => {
-                if(error) console.error(error);
                 if(error) {
-                    const error = new Error('Server Error');
-                    error.status = 500;
-                    return reject(error);
+                    return reject(errorHandler(error));
                 };
             });
             if (!email_username || !password) {
@@ -86,32 +59,14 @@ class User {
             const sql = `SELECT * FROM users WHERE email='${email_username}';`;
             mysql_db.execute(sql, (error, result) => {
                 if (error) {
-                    //useful in error handler
-                    // console.log(error.code); //ER_PARSE_ERROR -> QUERY
-                    // console.log(error.sqlState); //42000
-                    // console.log(error.errno); //1064
-                    if(error.code==='ER_PARSE_ERROR') {
-                        console.error('SQL QUERY ERROR : ' + error);
-                        const query_error = new Error('Server Error');
-                        query_error.status = 500;
-                        return reject(query_error);
-                    }
-                    else {
-                        console.error('SQL ERROR : ' + error);
-                        return reject(error);
-                    }
+                    return reject(errorHandler(error));
                 } else {
                     if(result.length === 0) {
-                         //can check if user not found | not found error code
-                        console.log('SQL ERROR : FINDING USER');
                         const error = new Error('Wrong username/email or password');
                         error.status = 404;
                         return reject(error);
                     }
-                    console.log('SQL MESSAGE : USERNAME/EMAIL MATCHED');
-                    console.log(result);
                     if(bcrypt.compareSync(password, result[0].password)) {
-                        console.log('SQL MESSAGE : USERNAME/EMAIL & PASSWORD MATCHED');
                         resolve({
                             _id : result[0]._id,
                             username : result[0].username,
@@ -120,91 +75,95 @@ class User {
                         });
                     }
                     else {
-                        console.error('SQL ERROR : PASSWORD NOT MATCHED');
                         const error = new Error('Wrong username/email or password');
                         error.status = 404;
                         return reject(error);
                     }
                 }
-                mysql_db.close;
             });
-        })
+        });
+    };
+
+    static find() {
+        return new Promise((resolve, reject) => {
+            mysql_db.connect((error) => {
+                if(error) return reject(errorHandler(error));
+            });
+            const sql = `
+            SELECT * FROM users;`;
+            mysql_db.execute(sql, (error, users) => {
+                if (error) {
+                    return reject(errorHandler(error));
+                } else {
+                    if(users.length === 0) {
+                        const error = new Error('Users Not Found');
+                        error.status = 404;
+                        return reject(error);
+                    }
+                    resolve(users); //Returns the product
+                };
+            });
+        });
     };
     
     static findByEmail(email) {
         return new Promise((resolve, reject) => {
             mysql_db.connect((error) => {
-                if(error) console.error(error);
                 if(error) {
-                    const error = new Error('Server Error');
-                    error.status = 500;
-                    reject(error);
+                    return reject(errorHandler(error));
                 };
             });
             const sql = `SELECT * FROM users WHERE email='${email}';`;
-            mysql_db.execute(sql, (error, result) => {
+            mysql_db.execute(sql, (error, user) => {
                 if (error) {
-                    //can chekc if user not found | not found error code
-                    if(error.code==='ER_PARSE_ERROR') {
-                        console.error('SQL QUERY ERROR : ' + error);
-                        const query_error = new Error('Server Error');
-                        query_error.status = 500;
-                        return reject(query_error);
-                    }
-                    else {
-                        console.error('SQL ERROR : ' + error);
-                        return reject(error);
-                    }
+                    return reject(errorHandler(error));
                 } else {
-                    if(result.length === 0) {
-                        //can check if user not found | not found error code
-                       console.log('SQL ERROR : FINDING USER');
-                       const error = new Error('Wrong email');
+                    if(user.length === 0) {
+                       const error = new Error('User Not Found');
                        error.status = 404;
                        return reject(error);
                     }
-                    console.log(result);
-                    console.log('SQL MESSAGE : USER FOUND');
                     resolve({
-                        _id : result[0]._id,
-                        username : result[0].username,
-                        email : result[0].email,
-                        cart_id : result[0].cart_id
+                        _id : user[0]._id,
+                        username : user[0].username,
+                        email : user[0].email,
+                        cart_id : user[0].cart_id
                     }); //Returns the user
                 }
-                mysql_db.close;
             });
-            
         });
     };
     
     static findById(id) {
         return new Promise((resolve, reject) => {
             mysql_db.connect((error) => {
-                if(error) console.error(error);
                 if(error) {
-                    const error = new Error('Server Error');
-                    error.status = 500;
-                    reject(error);
+                    return reject(errorHandler(error));
                 };
             });
             const sql = `
             SELECT * FROM users WHERE _id=${id};`;
-            mysql_db.execute(sql, (error, result) => {
+            mysql_db.execute(sql, (error, user) => {
                 if (error) {
-                    console.error('SQL ERROR : USER NOT FOUND');
-                    //create new error
-                    reject(error);
+                    return reject(errorHandler(error));
                 } else {
-                    console.log('SQL MESSAGE : USER FOUND');
-                    resolve(result[0]); //Returns the user
+                    if(user.length === 0) {
+                       const error = new Error('User Not Found');
+                       error.status = 404;
+                       return reject(error);
+                    }
+                    resolve({
+                        _id : user[0]._id,
+                        username : user[0].username,
+                        email : user[0].email,
+                        cart_id : user[0].cart_id
+                    }); //Returns the user
                 }
-                mysql_db.close;
             });
-            
         });
     };
 
+    //methods below need to updated
     static findByIdandUpdate(id,user) {
         return new Promise((resolve, reject) => {
             mysql_db.connect((error) => {

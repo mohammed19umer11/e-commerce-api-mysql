@@ -7,7 +7,7 @@ export const signUp = async (req, res) => {
         await user.save()
         return res.status(201).send('User created'); 
     } catch (error) {
-        return res.status(error.status).send(error.message);
+        return res.status(error.status?error.status: 500).send(error.message);
     }
 };
 
@@ -24,21 +24,21 @@ export const logIn = async (req,res) => {
         };
         return res.status(204).send('Login succesfull');
     } catch (error) {
-        return res.status(error.status).send(error.message);
+        return res.status(error.status?error.status: 500).send(error.message);
     }
 }
 
 export const getProfile = async (req,res) => {
-    const {email} = req.body;
+    const {id} = req.session.user;
+    console.log(id);
     try {
-        const user = await User.findByEmail(email);
+        const user = await User.findById(id);
         console.log(user);
-        // req.session.user = user;
-        // console.log(req.session.user);
-        // console.log(req.session);
+        console.log(req.session.user);
+        console.log(req.session);
         return res.status(201).json(user);
     } catch (error) {
-        return res.status(error.status).send(error.message);
+        return res.status(error.status?error.status: 500).send(error.message);
     }
 }
 

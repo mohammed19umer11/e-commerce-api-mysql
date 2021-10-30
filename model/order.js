@@ -1,4 +1,5 @@
 import mysql_db from '../db/sql-connection.js';
+import errorHandler from '../utils/errorHandler.js';
 
 class Order {
     constructor(order) {
@@ -11,53 +12,69 @@ class Order {
     save() {
         return new Promise((resolve, reject) => {
             mysql_db.connect((error) => {
-                if(error) throw error;
-                console.log(mysql_db.threadId);
+                if(error) return reject(errorHandler(error));
             });
             const sql = 
             `   INSERT INTO orders (user_id,cart_id,total_price, address) 
                 VALUES (${this.user_id},${this.cart_id},${this.total_price},'${this.address}');`;
             mysql_db.execute(sql, (error, result) => {
                 if (error) {
-                    reject(error);
+                    return reject(errorHandler(error));
                 } else { 
-                    console.log('INSERTED');
-                    console.log(result);
-                    // returning the inserted order 
                     mysql_db.execute(`SELECT * FROM orders WHERE _id = ${result.insertId}`, (error, order) => {
                         if (error) {
-                            reject(error);
+                            return reject(errorHandler(error));
                         }
                         else {
-                            console.log(order[0]);
                             resolve(order[0]); //For testing the return 
                         }
-                    })
+                    });
                 }
-
-                mysql_db.close;
             });
         });
     };
 
+    static find() {
+        return new Promise((resolve, reject) => {
+            mysql_db.connect((error) => {
+                if(error) return reject(errorHandler(error));
+            });
+            const sql = `
+            SELECT * FROM orders;`;
+            mysql_db.execute(sql, (error, orders) => {
+                if (error) {
+                    return reject(errorHandler(error));
+                } else {
+                    if(orders.length === 0) {
+                        const error = new Error('Orders Not Found');
+                        error.status = 404;
+                        return reject(error);
+                    }
+                    resolve(orders); //Returns the product
+                };
+            });
+        });
+    }; //Need to use Inner Join and Group by
+
     static findById(id) {
         return new Promise((resolve, reject) => {
             mysql_db.connect((error) => {
-                if(error) throw error;
-                console.log(mysql_db.threadId);
+                if(error) return reject(errorHandler(error));
             });
             const sql = `
             SELECT * FROM orders WHERE _id=${id};`;
-            mysql_db.execute(sql, (error, result) => {
+            mysql_db.execute(sql, (error, order) => {
                 if (error) {
-                    reject(error);
+                    return reject(errorHandler(error));
                 } else {
-                    console.log('FOUND');
-                    resolve(result[0]); //Returns the product
+                    if(order.length === 0) {
+                        const error = new Error('Order Not Found');
+                        error.status = 404;
+                        return reject(error);
+                    }
+                    resolve(order[0]); //Returns the product
                 }
-                mysql_db.close;
-            });
-            
+            }); 
         });
     };
     
